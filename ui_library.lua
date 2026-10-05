@@ -1,3 +1,7 @@
+--================================================================--
+--  ui_library.lua  |  ส่วนที่ 1/2
+--================================================================--
+
 local Library = {}
 
 function Library.new(config)
@@ -436,332 +440,7 @@ function Library.new(config)
 			setOpen(not uiOpen)
 		end
 	end)
-
-	--------------------------------------------------------------------
-	-- ชุดองค์ประกอบ
-	--------------------------------------------------------------------
-	local fpsSetters = {}
-
-	local function Elements(Content)
-		local E = {}
-		local order = 0
-		local function nextOrder() order += 1 return order end
-
-		function E.Section(text)
-			local l = new("TextLabel", {
-				LayoutOrder = nextOrder(),
-				Size = UDim2.new(1, 0, 0, 22),
-				BackgroundTransparency = 1,
-				Font = FONT_BOLD,
-				Text = string.upper(text),
-				TextColor3 = Theme.Accent,
-				TextSize = 12,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				Parent = Content,
-			}, { new("UIPadding", { PaddingLeft = UDim.new(0, 4) }) })
-			hook(function() l.TextColor3 = Theme.Accent end)
-		end
-
-		function E.Label(text)
-			return new("TextLabel", {
-				LayoutOrder = nextOrder(),
-				Size = UDim2.new(1, 0, 0, 30),
-				BackgroundColor3 = Theme.Element,
-				Font = FONT,
-				Text = text,
-				TextColor3 = Theme.SubText,
-				TextSize = 13,
-				TextWrapped = true,
-				Parent = Content,
-			}, { corner(10) })
-		end
-
-		function E.Stat(text, initial)
-			local row = new("Frame", {
-				LayoutOrder = nextOrder(),
-				Size = UDim2.new(1, 0, 0, 34),
-				BackgroundColor3 = Theme.Element,
-				Parent = Content,
-			}, { corner(10) })
-
-			new("TextLabel", {
-				BackgroundTransparency = 1,
-				Position = UDim2.new(0, 12, 0, 0),
-				Size = UDim2.new(1, -90, 1, 0),
-				Font = FONT,
-				Text = text,
-				TextColor3 = Theme.Text,
-				TextSize = 14,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				Parent = row,
-			})
-
-			local value = new("TextLabel", {
-				BackgroundTransparency = 1,
-				AnchorPoint = Vector2.new(1, 0),
-				Position = UDim2.new(1, -12, 0, 0),
-				Size = UDim2.new(0, 70, 1, 0),
-				Font = FONT_BOLD,
-				Text = initial or "-",
-				TextColor3 = Theme.Accent,
-				TextSize = 15,
-				TextXAlignment = Enum.TextXAlignment.Right,
-				Parent = row,
-			})
-
-			return function(t, color)
-				value.Text = t
-				if color then value.TextColor3 = color end
-			end
-		end
-
-		function E.AddFPSStat(title)
-			local setter = E.Stat(title or "FPS", "...")
-			table.insert(fpsSetters, setter)
-			return setter
-		end
-
-		function E.Button(text, callback)
-			local b = new("TextButton", {
-				LayoutOrder = nextOrder(),
-				Size = UDim2.new(1, 0, 0, 38),
-				BackgroundColor3 = Theme.Element,
-				Font = FONT,
-				Text = text,
-				TextColor3 = Theme.Text,
-				TextSize = 14,
-				AutoButtonColor = false,
-				Parent = Content,
-			}, { corner(10) })
-
-			local s = stroke(Theme.Accent, 1, 0.65)
-			s.Parent = b
-			hook(function() s.Color = Theme.Accent end)
-
-			b.MouseButton1Down:Connect(function() tween(b, 0.1, { BackgroundColor3 = Theme.Accent2 }) end)
-			b.MouseButton1Up:Connect(function() tween(b, 0.2, { BackgroundColor3 = Theme.Element }) end)
-			b.MouseLeave:Connect(function() tween(b, 0.2, { BackgroundColor3 = Theme.Element }) end)
-			b.MouseButton1Click:Connect(function() if callback then callback() end end)
-			return b
-		end
-
-		function E.Toggle(text, default, callback)
-			local state = default or false
-
-			local row = new("TextButton", {
-				LayoutOrder = nextOrder(),
-				Size = UDim2.new(1, 0, 0, 38),
-				BackgroundColor3 = Theme.Element,
-				Text = "",
-				AutoButtonColor = false,
-				Parent = Content,
-			}, { corner(10) })
-
-			new("TextLabel", {
-				BackgroundTransparency = 1,
-				Position = UDim2.new(0, 12, 0, 0),
-				Size = UDim2.new(1, -70, 1, 0),
-				Font = FONT,
-				Text = text,
-				TextColor3 = Theme.Text,
-				TextSize = 14,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				TextTruncate = Enum.TextTruncate.AtEnd,
-				Parent = row,
-			})
-
-			local pill = new("Frame", {
-				AnchorPoint = Vector2.new(1, 0.5),
-				Position = UDim2.new(1, -12, 0.5, 0),
-				Size = UDim2.new(0, 42, 0, 22),
-				BackgroundColor3 = Theme.Off,
-				Parent = row,
-			}, { corner(11) })
-
-			local knob = new("Frame", {
-				AnchorPoint = Vector2.new(0, 0.5),
-				Position = state and UDim2.new(1, -20, 0.5, 0) or UDim2.new(0, 2, 0.5, 0),
-				Size = UDim2.new(0, 18, 0, 18),
-				BackgroundColor3 = Color3.new(1, 1, 1),
-				Parent = pill,
-			}, { corner(9) })
-
-			hook(function() pill.BackgroundColor3 = state and Theme.Accent or Theme.Off end)
-
-			row.MouseButton1Click:Connect(function()
-				state = not state
-				tween(pill, 0.2, { BackgroundColor3 = state and Theme.Accent or Theme.Off })
-				tween(knob, 0.2, {
-					Position = state and UDim2.new(1, -20, 0.5, 0) or UDim2.new(0, 2, 0.5, 0),
-				}, Enum.EasingStyle.Back)
-				if callback then callback(state) end
-			end)
-		end
-
-		function E.Slider(text, min, max, default, callback, suffix)
-			suffix = suffix or ""
-			local value = default or min
-
-			local frame = new("Frame", {
-				LayoutOrder = nextOrder(),
-				Size = UDim2.new(1, 0, 0, 54),
-				BackgroundColor3 = Theme.Element,
-				Parent = Content,
-			}, { corner(10) })
-
-			new("TextLabel", {
-				BackgroundTransparency = 1,
-				Position = UDim2.new(0, 12, 0, 6),
-				Size = UDim2.new(1, -80, 0, 18),
-				Font = FONT,
-				Text = text,
-				TextColor3 = Theme.Text,
-				TextSize = 13,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				Parent = frame,
-			})
-
-			local valueLabel = new("TextLabel", {
-				BackgroundTransparency = 1,
-				AnchorPoint = Vector2.new(1, 0),
-				Position = UDim2.new(1, -12, 0, 6),
-				Size = UDim2.new(0, 60, 0, 18),
-				Font = FONT_BOLD,
-				Text = tostring(value) .. suffix,
-				TextColor3 = Theme.Accent,
-				TextSize = 13,
-				TextXAlignment = Enum.TextXAlignment.Right,
-				Parent = frame,
-			})
-
-			local bar = new("Frame", {
-				Position = UDim2.new(0, 12, 0, 36),
-				Size = UDim2.new(1, -24, 0, 6),
-				BackgroundColor3 = Theme.Off,
-				Parent = frame,
-			}, { corner(3) })
-
-			local a0 = (value - min) / (max - min)
-			local fillGrad = gradient(Theme.Accent2, Theme.Accood
-		end
-	end
-
-	local function setActive(name, on)
-		local idx = table.find(ActiveList, name)
-		if on and not idx then
-			table.insert(ActiveList, name)
-		elseif not on and idx then
-			table.remove(ActiveList, idx)
-		end
-		refreshStatus()
-		toast(name .. (on and "  :  เปิด" or "  :  ปิด"), on and Theme.Good or Theme.SubText)
-	end
-
-	local function headerButton(text, xOffset, color)
-		return new("TextButton", {
-			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, xOffset, 0.5, 0),
-			Size = UDim2.new(0, 28, 0, 28),
-			BackgroundColor3 = color,
-			BackgroundTransparency = 0.25,
-			Font = FONT_BOLD,
-			Text = text,
-			TextColor3 = Theme.Text,
-			TextSize = 15,
-			AutoButtonColor = false,
-			ZIndex = 3,
-			Parent = Header,
-		}, { corner(9) })
-	end
-
-	local CloseBtn = headerButton("✕", -10, Theme.Danger)
-	local HideBtn = headerButton("–", -44, Theme.Off)
-
-	makeDraggable(Header, Main)
-
-	-- Sidebar + Body
-	local Sidebar = new("Frame", {
-		Position = UDim2.new(0, 10, 0, HEADER_H + 10),
-		Size = UDim2.new(0, 108, 1, -(HEADER_H + 20)),
-		BackgroundColor3 = Theme.Element,
-		BackgroundTransparency = 0.2,
-		Parent = Main,
-	}, {
-		corner(12),
-		new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
-		new("UIPadding", {
-			PaddingTop = UDim.new(0, 8), PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6),
-		}),
-	})
-
-	local Body = new("Frame", {
-		Position = UDim2.new(0, 126, 0, HEADER_H + 10),
-		Size = UDim2.new(1, -136, 1, -(HEADER_H + 20)),
-		BackgroundTransparency = 1,
-		Parent = Main,
-	})
-
-	--------------------------------------------------------------------
-	-- ปุ่มลอย เปิด/ปิด UI
-	--------------------------------------------------------------------
-	local ToggleStroke = stroke(Color3.new(1, 1, 1), 2, 0.2)
-	local ToggleGrad = gradient(Color3.new(), Color3.new(), 45)
-
-	local Toggle = new("TextButton", {
-		Name = "FloatingToggle",
-		Position = TOGGLE_POS,
-		Size = UDim2.new(0, 56, 0, 56),
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		Text = "",
-		AutoButtonColor = false,
-		ZIndex = 10,
-		Parent = Gui,
-	}, { corner(18), ToggleStroke, ToggleGrad })
-	makeIcon(Toggle, 6)
-
-	hook(function()
-		local dark = darken(Theme.Accent, 0.68)
-		local base = Color3.fromRGB(8, 12, 20)
-		HeaderGrad.Color = ColorSequence.new(dark, base)
-		PatchGrad.Color = ColorSequence.new(dark, base)
-		LineGrad.Color = ColorSequence.new(Theme.Accent, base)
-		local light = Theme.Accent:Lerp(Color3.new(1, 1, 1), 0.4)
-		BadgeGrad.Color = ColorSequence.new(light, Theme.Accent2)
-		ToggleGrad.Color = ColorSequence.new(light, Theme.Accent2)
-		ToggleStroke.Color = Theme.Accent:Lerp(Color3.new(1, 1, 1), 0.6)
-		refreshStatus()
-	end)
-
-	local uiOpen, busy = true, false
-
-	local function setOpen(state)
-		if busy or state == uiOpen then return end
-		busy = true
-		uiOpen = state
-
-		if state then
-			MainScale.Scale = 0
-			Main.Visible = true
-			tween(MainScale, 0.35, { Scale = userScale }, Enum.EasingStyle.Back).Completed:Wait()
-		else
-			tween(MainScale, 0.2, { Scale = 0 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In).Completed:Wait()
-			Main.Visible = false
-		end
-		tween(Toggle, 0.2, { BackgroundTransparency = state and 0 or 0.3 })
-		busy = false
-	end
-
-	makeDraggable(Toggle, Toggle, function() setOpen(not uiOpen) end)
-	HideBtn.MouseButton1Click:Connect(function() setOpen(false) end)
-	CloseBtn.MouseButton1Click:Connect(function() Gui:Destroy() end)
-
-	UserInputService.InputBegan:Connect(function(input, processed)
-		if not processed and input.KeyCode == Enum.KeyCode.RightShift then
-			setOpen(not uiOpen)
-		end
-	end)
-
-	--------------------------------------------------------------------
+		--------------------------------------------------------------------
 	-- ชุดองค์ประกอบ (ผูกกับแต่ละหน้า)
 	--------------------------------------------------------------------
 	local function Elements(Content)
@@ -1113,6 +792,7 @@ function Library.new(config)
 	local selectedTab = nil
 
 	local function CreateTab(name, emoji)
+		emoji = emoji or "📁"
 		local btn = new("TextButton", {
 			LayoutOrder = #Tabs + 1,
 			Size = UDim2.new(1, 0, 0, 34),
@@ -1167,10 +847,9 @@ function Library.new(config)
 		return Elements(page)
 	end
 
-
-	----------------------------------------------------------------
+	--------------------------------------------------------------------
 	-- ส่วนที่ main.lua เรียกใช้
-	----------------------------------------------------------------
+	--------------------------------------------------------------------
 	local fpsSetters = {}
 
 	local Window = {
@@ -1186,12 +865,12 @@ function Library.new(config)
 		Gui:Destroy()
 	end
 
-	-- เพิ่มแถวแสดง FPS สดๆ ลงในแท็บที่ระบุ
+	-- เพิ่มแถวแสดง FPS
 	function Window.AddFPSStat(tab, text)
 		table.insert(fpsSetters, tab.Stat(text or "FPS", "-"))
 	end
 
-	-- สร้างแท็บ "ตั้งค่า" สำเร็จรูป (สี UI / ขนาด / FPS / รีเซ็ต)
+	-- สร้างแท็บ "ตั้งค่า" สำเร็จรูป
 	function Window.AddSettingsTab(name)
 		local Settings = CreateTab(name or "ตั้งค่า", "⚙️")
 
